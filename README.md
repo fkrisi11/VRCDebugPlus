@@ -39,7 +39,7 @@ There are some parameters missing from my avatar...? Reset your OSC config in yo
   </li>
 </ul>
 <br>
-Searching:<br>
+<b>Searching</b><br>
 You can find a search bar below the data list, where you can type in your keywords to find your parameters<br>
 Just typing in words (separated by commas or spaces) will get you fuzzy search results, searching for partial matches<br>
 Using "double" or 'single' quotation marks will search for exact matches. You can mix and match fuzzy and exact match search terms<br>
