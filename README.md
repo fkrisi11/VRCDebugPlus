@@ -1,7 +1,15 @@
 # VRCDebug
 
 ![image](https://github.com/fkrisi11/VRCDebugPlus/assets/26310365/736d6772-4c33-4804-9349-a4cca2545f2c)
-An external program that uses OSC to read and write values on your avatar.<br><br>
+An external program that uses OSC to read and write values on your avatar.<br>
+Just start it up, give it a moment to connect, and you can start debugging as soon as the parameters appear :)
+<br><br>
+
+<h2>Common issues</h2>
+The program doesn't want to connect? Check if you have OSC enabled in your radial menu (Options -> OSC) in VRChat.<br>
+There are some parameters missing from my avatar...? Reset your OSC config in your radial menu (Options -> OSC) in VRChat.
+<br>
+
 <h3>What do the colours mean?</h3>
 <b>Yellow:</b> This parameter has to update once to show its real value. (This is because of a bug with OSCQuery)<br>
 <b>Grayed out value:</b> This is a built-in parameter that can't be changed from the program.
@@ -30,6 +38,14 @@ An external program that uses OSC to read and write values on your avatar.<br><b
     Clicking the link at the bottom left will take you to the local OSCQuery website where you can see all the avatar values as json data
   </li>
 </ul>
+<br>
+Searching:<br>
+You can find a search bar below the data list, where you can type in your keywords to find your parameters<br>
+Just typing in words (separated by commas or spaces) will get you fuzzy search results, searching for partial matches<br>
+Using "double" or 'single' quotation marks will search for exact matches. You can mix and match fuzzy and exact match search terms<br>
+/ and \ are interchangeable for ease of use
+
+<br>
 <h3>What can I enter into the value field?</h3>
 <b>Bool:</b> Since they only have 2 values, editing them will flip their values<br>
 <b>Integer:</b> These fields take whole numbers<br>
@@ -58,4 +74,7 @@ Values can be edited by:
   </li>
 </ul>
 Note: editing a bool value will change it to its opposite value immediately
+<br>
+<h1>Download here</h1>
 
+[Latest release](https://github.com/fkrisi11/VRCDebugPlus/releases/latest)
