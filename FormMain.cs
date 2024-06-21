@@ -913,6 +913,12 @@ namespace VRCDebug
                     else
                         row.Cells["Value"].Style.ForeColor = Color.Black;
                 }
+
+                // Types
+                if (isNightMode)
+                    row.Cells["Type"].Style.ForeColor = Color.White;
+                else
+                    row.Cells["Type"].Style.ForeColor = Color.Black;
             }
 
             // Parameter count
