@@ -42,6 +42,7 @@
             this.checkBoxBuiltInParams = new System.Windows.Forms.CheckBox();
             this.buttonReloadList = new System.Windows.Forms.Button();
             this.textBoxGuide = new System.Windows.Forms.TextBox();
+            this.checkBoxAlwaysOnTop = new System.Windows.Forms.CheckBox();
             this.dataGridViewAvatarParameters = new VRCDebug.CustomDataGridView();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarRefreshRate)).BeginInit();
             this.panelRefreshRate.SuspendLayout();
@@ -205,6 +206,17 @@
             this.textBoxGuide.TabIndex = 13;
             this.textBoxGuide.TabStop = false;
             // 
+            // checkBoxAlwaysOnTop
+            // 
+            this.checkBoxAlwaysOnTop.AutoSize = true;
+            this.checkBoxAlwaysOnTop.Location = new System.Drawing.Point(5, 12);
+            this.checkBoxAlwaysOnTop.Name = "checkBoxAlwaysOnTop";
+            this.checkBoxAlwaysOnTop.Size = new System.Drawing.Size(130, 24);
+            this.checkBoxAlwaysOnTop.TabIndex = 14;
+            this.checkBoxAlwaysOnTop.Text = "Always on Top";
+            this.checkBoxAlwaysOnTop.UseVisualStyleBackColor = true;
+            this.checkBoxAlwaysOnTop.CheckedChanged += new System.EventHandler(this.checkBoxAlwaysOnTop_CheckedChanged);
+            // 
             // dataGridViewAvatarParameters
             // 
             this.dataGridViewAvatarParameters.AllowUserToAddRows = false;
@@ -237,6 +249,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1200, 567);
+            this.Controls.Add(this.checkBoxAlwaysOnTop);
             this.Controls.Add(this.textBoxGuide);
             this.Controls.Add(this.buttonReloadList);
             this.Controls.Add(this.checkBoxBuiltInParams);
@@ -285,6 +298,7 @@
         private System.Windows.Forms.CheckBox checkBoxBuiltInParams;
         private System.Windows.Forms.Button buttonReloadList;
         private System.Windows.Forms.TextBox textBoxGuide;
+        private System.Windows.Forms.CheckBox checkBoxAlwaysOnTop;
     }
 }
 

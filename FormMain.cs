@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using VRC.OSCQuery;
 using Rug.Osc;
+using System.Diagnostics;
 
 namespace VRCDebug
 {
@@ -53,6 +54,9 @@ namespace VRCDebug
         int RefreshDelayInMs = 1000;
         bool StopRefreshing = false;
         bool PauseRefresh = false;
+        private Stopwatch stopwatch = new Stopwatch();
+        private Thread monitoringThread;
+        private bool uiResponsive;
         EditedCell editedCell;
 
         struct EditedCell
@@ -98,10 +102,19 @@ namespace VRCDebug
             dataTable.Columns.Add("Type", typeof(string));
             dataTable.Columns.Add("Value", typeof(string));
 
-            dataTable.PrimaryKey = new DataColumn[] { dataTable.Columns["Name"] };
+            // Auto incrementing ID field
+            DataColumn idColumn = new DataColumn("ID", typeof(int));
+            idColumn.AutoIncrement = true;
+            idColumn.AutoIncrementSeed = 1;
+            idColumn.AutoIncrementStep = 1;
+            dataTable.Columns.Add(idColumn);
+
+            dataTable.PrimaryKey = new DataColumn[] { dataTable.Columns["ID"] };
 
             bindingSource.DataSource = dataTable;
             dataGridViewAvatarParameters.DataSource = bindingSource;
+
+            dataGridViewAvatarParameters.Columns["ID"].Visible = false;
 
             // Allow only the "Value" column to be editable
             foreach (DataGridViewColumn column in dataGridViewAvatarParameters.Columns)
@@ -109,6 +122,11 @@ namespace VRCDebug
                 if (column.Name != "Value")
                     column.ReadOnly = true;
             }
+
+            // Start the UI responsiveness testing thread
+            monitoringThread = new Thread(MonitorUIThread);
+            monitoringThread.IsBackground = true;
+            monitoringThread.Start();
 
             if (!backgroundWorkerRefresh.IsBusy)
                 backgroundWorkerRefresh.RunWorkerAsync();
@@ -450,12 +468,12 @@ namespace VRCDebug
         #region Link labels
         private void linkLabelOscLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            System.Diagnostics.Process.Start(linkLabelOscLink.Text);
+            Process.Start(linkLabelOscLink.Text);
         }
 
         private void labelAvatarID_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            System.Diagnostics.Process.Start("https://vrchat.com/home/avatar/" + labelAvatarID.Text);
+            Process.Start("https://vrchat.com/home/avatar/" + labelAvatarID.Text);
         }
         #endregion Link labels
 
@@ -487,6 +505,7 @@ namespace VRCDebug
             if (e.Button == MouseButtons.Right || e.Button == MouseButtons.Middle)
             {
                 ResetSorting();
+                ReadValues();
                 return;
             }
 
@@ -504,6 +523,8 @@ namespace VRCDebug
 
             // Sort
             SortDataGridView(columnName, sortDirection, "Name");
+
+            ReadValues();
         }
         #endregion Sorting
 
@@ -586,6 +607,9 @@ namespace VRCDebug
 
             try
             {
+                if (monitoringThread != null && monitoringThread.IsAlive)
+                    monitoringThread.Abort();
+
                 ConfigManager.SaveWindowSize(Width, Height);
                 udpClient?.Dispose();
             }
@@ -702,7 +726,7 @@ namespace VRCDebug
         // Debug logging
         private void Log(string text)
         {
-            System.Diagnostics.Debug.WriteLine(text);
+            Debug.WriteLine(text);
         }
         #endregion Other
 
@@ -867,8 +891,14 @@ namespace VRCDebug
                 }
             }
 
-            // Display data changes on the UI
-            dataTable.EndLoadData();
+            // Catch any bad data
+            try
+            {
+                // Display data changes on the UI
+                dataTable.EndLoadData();
+            }
+            catch (Exception) { }
+
             dataGridViewAvatarParameters.ResumeLayout();
 
             // Refresh once to update the selected cell's value
@@ -881,7 +911,7 @@ namespace VRCDebug
 
                 // Non built-ins are yellow by default, until their value changed
                 if (!BuiltinParams.List.ContainsKey(name) && valueChangedTracker.ContainsKey(name) && !valueChangedTracker[name])
-                    row.Cells["Name"].Style.ForeColor = isNightMode ? Color.Yellow : Color.Goldenrod;
+                    row.Cells["Name"].Style.ForeColor = isNightMode ? Color.Yellow : Color.DarkOrange;
                 else
                     row.Cells["Name"].Style.ForeColor = isNightMode ? Color.White : Color.Black;
 
@@ -941,6 +971,51 @@ namespace VRCDebug
                 if (rowIndex >= 0 && rowIndex < dataGridViewAvatarParameters.RowCount)
                     dataGridViewAvatarParameters.Rows[rowIndex].Selected = true;
             }
+        }
+
+        private void checkBoxAlwaysOnTop_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBoxAlwaysOnTop.Checked)
+                TopMost = true;
+            else
+                TopMost = false;
+        }
+
+        private void MonitorUIThread()
+        {
+            while (true)
+            {
+                uiResponsive = false;
+                stopwatch.Restart();
+
+                // Post a message to the UI thread
+                BeginInvoke((MethodInvoker)delegate
+                {
+                    stopwatch.Stop();
+                    uiResponsive = true;
+                });
+
+                Thread.Sleep(1000);
+
+                // Check if the UI thread responded in a given time
+                if (!uiResponsive && stopwatch.ElapsedMilliseconds > 500)
+                {
+                    // If the UI thread did not respond in time, unfreeze UI
+                    Invoke((MethodInvoker)delegate
+                    {
+                        FixFrozenUI();
+                    });
+                }
+            }
+        }
+
+        private void FixFrozenUI()
+        {
+            RefreshDelayInMs = 1000;
+            PauseRefresh = true;
+            trackBarRefreshRate.Value = trackBarRefreshRate.Minimum;
+
+            MessageBox.Show("The UI froze, so the automatic refreshing has been paused.", "The UI froze", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 }
