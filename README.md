@@ -1,6 +1,6 @@
 # VRCDebug
 
-![image](https://github.com/fkrisi11/VRCDebugPlus/assets/26310365/736d6772-4c33-4804-9349-a4cca2545f2c)
+![image](https://github.com/fkrisi11/VRCDebugPlus/assets/26310365/611f2fe7-2d85-450b-ae67-dadfd18be0f9)
 An external program that uses OSC to read and write values on your avatar.<br>
 Just start it up, give it a moment to connect, and you can start debugging as soon as the parameters appear :)
 <br><br>
