@@ -29,7 +29,10 @@ There are some parameters missing from my avatar...? Reset your OSC config in yo
     Middle clicking the window (not the titlebar of it) will reset it back to its default size
   </li>
   <li>
-    Clicking any header in the data table will sort the entire table by that column first, and in ABC order second. Clicking it again reverses the sorting order
+    Clicking any header in the data table will sort the entire table by that column first, and in ABC order second. Clicking it again reverses the sorting order.
+  </li>
+  <li>
+    Unsort the list by right clicking or middle clicking the data table's header
   </li>
   <li>
     Clicking the Avatar ID, above the data table, will take you to the VRChat page of that avatar
