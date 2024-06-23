@@ -11,7 +11,7 @@ There are some parameters missing from my avatar...? Reset your OSC config in yo
 <br>
 
 <h3>What do the colours mean?</h3>
-<b>Yellow:</b> This parameter has to update once to show its real value. (This is because of a bug with OSCQuery)<br>
+<b>Yellow (Orange in light theme):</b> This parameter has to update once to show its real value. (This is because of a bug with OSCQuery)<br>
 <b>Grayed out value:</b> This is a built-in parameter that can't be changed from the program.
 <br>
 <h3>Things to know about the UI</h3>
