@@ -1,6 +1,6 @@
 # VRCDebug
 
-![image](https://github.com/fkrisi11/VRCDebugPlus/assets/26310365/611f2fe7-2d85-450b-ae67-dadfd18be0f9)
+![image](https://github.com/user-attachments/assets/f33d07a7-707d-4cd2-8333-8c3dae3fc85f)
 An external program that uses OSC to read and write values on your avatar.<br>
 Just start it up, give it a moment to connect, and you can start debugging as soon as the parameters appear :)
 <br><br>
@@ -11,7 +11,6 @@ There are some parameters missing from my avatar...? Reset your OSC config in yo
 <br>
 
 <h3>What do the colours mean?</h3>
-<b>Yellow (Orange in light theme):</b> This parameter has to update once to show its real value. (This is because of a bug with OSCQuery)<br>
 <b>Grayed out value:</b> This is a built-in parameter that can't be changed from the program.
 <br>
 <h3>Things to know about the UI</h3>
