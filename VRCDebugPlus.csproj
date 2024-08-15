@@ -131,8 +131,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
-    <Reference Include="vrc-oscquery-lib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="vrc-oscquery-lib">
       <HintPath>References\vrc-oscquery-lib.dll</HintPath>
     </Reference>
   </ItemGroup>

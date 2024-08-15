@@ -12,9 +12,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using VRC.OSCQuery;
 using Rug.Osc;
 using System.Diagnostics;
+using Newtonsoft.Json;
+using VRC.OSCQuery;
 
 namespace VRCDebug
 {
@@ -35,8 +36,7 @@ namespace VRCDebug
         // Data
         BindingSource bindingSource = new BindingSource();
         DataTable dataTable;
-        Dictionary<string, bool> valueChangedTracker = new Dictionary<string, bool>();
-        Dictionary<string, string> previousValues = new Dictionary<string, string>();
+        Dictionary<string, string> OSCValues = new Dictionary<string, string>();
         Dictionary<string, ListSortDirection> columnSortDirections = new Dictionary<string, ListSortDirection>();
         bool ShowBuiltins = true;
         string avatarID = "";
@@ -149,16 +149,20 @@ namespace VRCDebug
                                                .Build();
 
                 List<OSCQueryServiceProfile> oscQueryServiceProfiles = oscQuery.GetOSCQueryServices().ToList();
-                OSCQueryServiceProfile oscQueryServiceProfile = oscQueryServiceProfiles.FirstOrDefault(x => x.name.Contains("VRChat-Client"));
 
-                if (oscQueryServiceProfile != null)
+                if (oscQueryServiceProfiles != null)
                 {
-                    VRChatClient = oscQueryServiceProfile;
-                    vrChatEndpoint = new IPEndPoint(VRChatClient.address, 9000);
-                    FindVRC = false;
-                    Invoke(new Action(() => linkLabelOscLink.Text = "http://127.0.0.1:" + VRChatClient.port.ToString()));
-                    Invoke(new Action(() => linkLabelOscLink.Visible = true));
-                    Invoke(new Action(() => linkLabelOscLink.Left = panelRefreshRate.Left + panelRefreshRate.Width / 2 - linkLabelOscLink.Width / 2));
+                    OSCQueryServiceProfile oscQueryServiceProfile = oscQueryServiceProfiles.FirstOrDefault(x => x.name.Contains("VRChat-Client"));
+
+                    if (oscQueryServiceProfile != null)
+                    {
+                        VRChatClient = oscQueryServiceProfile;
+                        vrChatEndpoint = new IPEndPoint(VRChatClient.address, 9000);
+                        FindVRC = false;
+                        Invoke(new Action(() => linkLabelOscLink.Text = "http://127.0.0.1:" + VRChatClient.port.ToString()));
+                        Invoke(new Action(() => linkLabelOscLink.Visible = true));
+                        Invoke(new Action(() => linkLabelOscLink.Left = panelRefreshRate.Left + panelRefreshRate.Width / 2 - linkLabelOscLink.Width / 2));
+                    }
                 }
             }
             catch (Exception) { }
@@ -206,53 +210,88 @@ namespace VRCDebug
             if (!avatarNode.Contents.TryGetValue("parameters", out OSCQueryNode parametersNode)) return null;
 
             Dictionary<string, OSCQueryNode> avatarQueryNodes = new Dictionary<string, OSCQueryNode>(avatarNode.Contents.Count);
-            Stack<OSCQueryNode> avatarTodo = new Stack<OSCQueryNode>(avatarNode.Contents.Count);
-            avatarTodo.Push(avatarNode);
+            Stack<OSCQueryNode> todoStack = new Stack<OSCQueryNode>(avatarNode.Contents.Count);
+            todoStack.Push(avatarNode);
 
             // /avatar reading
-            while (avatarTodo.Count > 0)
+            while (todoStack.Count > 0)
             {
-                OSCQueryNode oSCQueryNode = avatarTodo.Pop();
+                OSCQueryNode oSCQueryNode = todoStack.Pop();
                 if (oSCQueryNode != avatarNode)
-                {
                     avatarQueryNodes.Add(oSCQueryNode.FullPath.Remove(0, "/avatar".Length), oSCQueryNode);
-                }
 
                 if (oSCQueryNode.Contents == null) continue;
 
                 foreach (var kvp in oSCQueryNode.Contents)
                 {
-                    avatarTodo.Push(kvp.Value);
+                    todoStack.Push(kvp.Value);
 
+                    // Getting AvatarID
                     if (kvp.Key.Contains("change"))
-                    {
-                        // Getting AvatarID
                         avatarID = kvp.Value.Value.Length > 0 ? kvp.Value.Value[0].ToString() : "";
-                    }
                 }
             }
 
             // /avatar/parameter reading
             Dictionary<string, OSCQueryNode> oscQueryNodes = new Dictionary<string, OSCQueryNode>(parametersNode.Contents.Count);
-            Stack<OSCQueryNode> todo = new Stack<OSCQueryNode>(parametersNode.Contents.Count);
-            todo.Push(parametersNode);
+            todoStack.Push(parametersNode);
 
-            while (todo.Count > 0)
+            while (todoStack.Count > 0)
             {
-                OSCQueryNode oscQueryNode = todo.Pop();
+                OSCQueryNode oscQueryNode = todoStack.Pop();
 
+                // Collect nodes without their full path
                 if (oscQueryNode != parametersNode)
-                {
-                    // Collect nodes without their full path
                     oscQueryNodes.Add(oscQueryNode.FullPath.Remove(0, "/avatar/parameters/".Length), oscQueryNode);
-                }
 
                 if (oscQueryNode.Contents == null) continue;
 
-                foreach (var kvp in oscQueryNode.Contents)
+                foreach (KeyValuePair<string, OSCQueryNode> kvp in oscQueryNode.Contents)
                 {
-                    // Collect node values
-                    todo.Push(kvp.Value);
+                    todoStack.Push(kvp.Value);
+                }
+            }
+
+            // Collect data from /input, /tracking, and /chatbox into separate nodes
+            string[] rootPaths = new string[] { "input", "tracking", "chatbox" };
+            Dictionary<string, OSCQueryNode> inputNodes = new Dictionary<string, OSCQueryNode>();
+            Dictionary<string, OSCQueryNode> trackingNodes = new Dictionary<string, OSCQueryNode>();
+            Dictionary<string, OSCQueryNode> chatboxNodes = new Dictionary<string, OSCQueryNode>();
+
+            foreach (string rootPath in rootPaths)
+            {
+                if (!rootNode.Contents.TryGetValue(rootPath, out OSCQueryNode baseNode)) continue;
+
+                Dictionary<string, OSCQueryNode> queryNodes = new Dictionary<string, OSCQueryNode>(baseNode.Contents.Count);
+                todoStack.Push(baseNode);
+
+                // Collecting nodes for each root path
+                while (todoStack.Count > 0)
+                {
+                    OSCQueryNode oscQueryNode = todoStack.Pop();
+
+                    if (oscQueryNode != baseNode)
+                        queryNodes.Add(oscQueryNode.FullPath.Remove(0, $"/{rootPath}/".Length), oscQueryNode);
+
+                    if (oscQueryNode.Contents == null) continue;
+
+                    foreach (KeyValuePair<string, OSCQueryNode> kvp in oscQueryNode.Contents)
+                    {
+                        todoStack.Push(kvp.Value);
+                    }
+                }
+
+                switch (rootPath)
+                {
+                    case "input":
+                        inputNodes = queryNodes;
+                        break;
+                    case "tracking":
+                        trackingNodes = queryNodes;
+                        break;
+                    case "chatbox":
+                        chatboxNodes = queryNodes;
+                        break;
                 }
             }
 
@@ -284,7 +323,21 @@ namespace VRCDebug
                     return new OSCQueryRootNode();
 
                 string oscTreeString = await response.Content.ReadAsStringAsync();
-                OSCQueryRootNode oscTree = OSCQueryRootNode.FromString(oscTreeString);
+                OSCQueryRootNode oscTree = new OSCQueryRootNode();
+
+                try
+                {
+                    JsonConvert.DeserializeObject<object>(oscTreeString);
+                }
+                catch (JsonException)
+                {
+                    return new OSCQueryRootNode();
+                }
+                
+                oscTree = OSCQueryRootNode.FromString(oscTreeString);
+
+                if (oscTree == null)
+                    return new OSCQueryRootNode();
 
                 return oscTree;
             }
@@ -411,13 +464,10 @@ namespace VRCDebug
             string key = nameCell.Value.ToString();
             string newValue = valueCell.Value.ToString();
 
-            if (previousValues.ContainsKey(key))
-                previousValues[key] = newValue;
+            if (OSCValues.ContainsKey(key))
+                OSCValues[key] = newValue;
             else
-                previousValues.Add(key, newValue);
-
-            valueChangedTracker[key] = true;
-
+                OSCValues.Add(key, newValue);
 
             // OSC Data sending
             string valueToSend = editedCell.CellReference.Value.ToString().Trim().ToLower();
@@ -686,8 +736,8 @@ namespace VRCDebug
             {
                 string helperText = "";
 
-                if (!BuiltinParams.List.ContainsKey(cell.Value.ToString()) && valueChangedTracker.ContainsKey(cell.Value.ToString()) && !valueChangedTracker[cell.Value.ToString()])
-                    helperText = "\r\n\r\nThis parameter has to update once to show its real value";
+                if (!BuiltinParams.List.ContainsKey(cell.Value.ToString()))
+                    helperText = "\r\n\r\nThis is a custom parameter";
 
                 if (BuiltinParams.List.ContainsKey(cell.Value.ToString()))
                     helperText += "\r\n\r\nThis is a built-in parameter that can't be changed";
@@ -751,8 +801,7 @@ namespace VRCDebug
             {
                 // Clear the data table and value change tracker
                 dataTable.Clear();
-                valueChangedTracker.Clear();
-                previousValues.Clear();
+                OSCValues.Clear();
                 previousAvatarID = AvatarID;
             }
 
@@ -840,11 +889,8 @@ namespace VRCDebug
                     if (existingRows.TryGetValue(name, out DataRow row))
                     {
                         // Check for changes in values
-                        if (!previousValues.ContainsKey(name))
-                            previousValues[name] = row["Value"].ToString();
-
-                        if (row["Value"].ToString() != value)
-                            valueChangedTracker[name] = true;
+                        if (!OSCValues.ContainsKey(name))
+                            OSCValues[name] = row["Value"].ToString();
 
                         // Update existing row and track value changes
                         row["Type"] = type;
@@ -856,8 +902,7 @@ namespace VRCDebug
                         if (!BuiltinParams.List.ContainsKey(name) || ShowBuiltins)
                         {
                             dataTable.Rows.Add(name, type, value);
-                            previousValues[name] = value;
-                            valueChangedTracker[name] = false;
+                            OSCValues[name] = value;
                         }
                     }
 
@@ -909,11 +954,7 @@ namespace VRCDebug
             {
                 string name = row.Cells["Name"].Value.ToString();
 
-                // Non built-ins are yellow by default, until their value changed
-                if (!BuiltinParams.List.ContainsKey(name) && valueChangedTracker.ContainsKey(name) && !valueChangedTracker[name])
-                    row.Cells["Name"].Style.ForeColor = isNightMode ? Color.Yellow : Color.DarkOrange;
-                else
-                    row.Cells["Name"].Style.ForeColor = isNightMode ? Color.White : Color.Black;
+                row.Cells["Name"].Style.ForeColor = isNightMode ? Color.White : Color.Black;
 
                 // Bools
                 if (row.Cells["Type"].Value.ToString() == "Bool")
